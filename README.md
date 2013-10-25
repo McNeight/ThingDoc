@@ -31,22 +31,22 @@ one part per code block.
 
 ## Common keywords
 
-@root - This keyword must appear only once in the parsed files, and it indicates the top most level of the part or assembly
-@id -  Mandatory keyword to assign a unique id to a part
-@name - The name of a part
-@desc - Description of a part
-@image - An image of a part, given as a filename with an extension
+* @root - This keyword must appear only once in the parsed files, and it indicates the top most level of the part or assembly
+* @id -  Mandatory keyword to assign a unique id to a part
+* @name - The name of a part
+* @desc - Description of a part
+* @image - An image of a part, given as a filename with an extension
 
 ## Less common keywords
 
-@common
-@since - can be YYYY-MM-DD or some tag, e.g. "Mendel")
-@category - e.g. RP, fastener, etc
-@step
-@comment
-@using - dependencies on other parts
-@assembled
-@type - more detailed than category
+* @common
+* @since - can be YYYY-MM-DD or some tag, e.g. "Mendel")
+* @category - e.g. RP, fastener, etc
+* @step
+* @comment
+* @using - dependencies on other parts
+* @assembled
+* @type - more detailed than category
 
 # Command Line Usage
 
