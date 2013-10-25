@@ -107,7 +107,8 @@ Note: If none of --bom, --html, --tex, --wiki are provided then all 4 types are 
 
 ### File 2
 
-```/**
+```
+/**
  * @name Washer Assembly
  * @category Vitamins
  * @using m3washer
