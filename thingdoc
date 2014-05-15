@@ -65,6 +65,9 @@ class ThingDoc:
 
 	parse_only_files = False;
 
+	def __init__(self):
+		self.seen_files = []
+
 	def parse(self, indir, outdir, imagedir):
 
 		self.indir = indir
@@ -138,7 +141,7 @@ class ThingDoc:
 				if thing.id and thing.name:
 					if thing.id in things:
 						if thing.id == 1:
-							self.fatal('More than one @root detected!')
+							self.fatal('More than one @root detected!(%s:%d)' % (absname, linenum))
 						else:
 							self.error("Duplicate thing id: '%s' (%s:%d)" % (thing.id, absname, linenum))
 							success = False
@@ -146,6 +149,22 @@ class ThingDoc:
 						things[ thing.id ] = thing
 				thing = None
 				continue
+
+			# for parsing external libraries
+			if line.startswith('use') or line.startswith('include'):
+				try:
+					fileregex = re.compile("<(.*?)>")
+					path = fileregex.findall(line)[0]
+					if not path.startswith('/'): # A relative path
+						path = os.path.normpath(os.path.dirname(absname)+'/'+path)
+					#recurse if it's not been seen
+					if path not in self.seen_files:
+						print "*",path
+						self.seen_files.append(path)
+						self.process_file(path, things)
+				except:
+					self.error('Bad filepath in use or include (%s:%d)' % (absname, linenum))
+
 			if not thing:
 				continue  # not in a comment
 			if not line.startswith(' * '):
@@ -219,9 +238,13 @@ class ThingDoc:
 				if self.parse_only_files is not False:
 					if not name in self.parse_only_files:
 						continue
-				print name
 				absname = os.path.join(root, name)
-				self.process_file(absname, things)
+				if os.path.normpath(absname) not in self.seen_files:
+					print name
+					self.seen_files.append(os.path.normpath(absname))
+					print self.seen_files
+					self.process_file(absname, things)
+
 		return things
 
 
