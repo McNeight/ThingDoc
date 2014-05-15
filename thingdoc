@@ -62,7 +62,7 @@ def escape_latex(value):
 		return value
 
 class ThingDoc:
-	
+
 	parse_only_files = False;
 
 	def parse(self, indir, outdir, imagedir):
@@ -213,10 +213,10 @@ class ThingDoc:
 			dirs[:] = [d for d in dirs if not d.startswith('.')]
 			for name in files:
 				# skip if the file is not supported document
-				
+
 				if not os.path.splitext(name)[1] in ['.scad', '.tdoc']:
 					continue
-				if self.parse_only_files is not False:			
+				if self.parse_only_files is not False:
 					if not name in self.parse_only_files:
 						continue
 				print name
@@ -384,9 +384,9 @@ class ThingDoc:
 		except:
 			self.error('Cannot create documentation.html')
 			return
-		try:		
-			os.mkdir('html_data')	
-		except: 	
+		try:
+			os.mkdir('html_data')
+		except:
 			pass
 
 		# copy static files
@@ -432,9 +432,9 @@ parse_only_temp = False;
 def parse_only(option, opt, value, parser):
 	global parse_only_temp
 	parse_only_temp = [i.split("/")[-1] for i in value.split(',')]
-		
-	
-			
+
+
+
 
 def main():
 	parser = OptionParser(
