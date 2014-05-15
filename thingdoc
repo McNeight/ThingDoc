@@ -242,7 +242,6 @@ class ThingDoc:
 				if os.path.normpath(absname) not in self.seen_files:
 					print name
 					self.seen_files.append(os.path.normpath(absname))
-					print self.seen_files
 					self.process_file(absname, things)
 
 		return things
