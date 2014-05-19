@@ -112,15 +112,18 @@ class ThingDoc:
 	def process_file(self, absname, things):
 
 		try:
-			f = open(absname, 'r')
+			filehandle = open(absname, 'r')
+			# Read into array because we need to seek ahead
+			# IMHO, if your SCAD files are big enough that this
+			# is an issue, then you've got bigger problems ;).
+			f = filehandle.readlines()
+			filehandle.close()
 		except IOError:
 			self.fatal('Cannot open file %s' % absname)
 
 		success = True
 		thing = None
-		linenum = 0
-		for line in f:
-			linenum += 1
+		for linenum, line in enumerate(f):
 			if line.startswith('/**'):
 				if thing:
 					self.error('Start of the comment (/**) found but the previous one is still open (%s:%d)' % (absname, linenum))
@@ -133,8 +136,29 @@ class ThingDoc:
 					success = False
 					continue
 				if not thing.id:
-					self.error('Missing mandatory attribute @id (%s:%d)' % (absname, linenum))
-					success = False
+
+					# Search ahead and use the module name as the id if it was not given.
+					module = None
+					linenum_offset = 1
+					while module is None:
+						try:
+							test_line = f[linenum+linenum_offset]
+							print test_line
+							match = re.search(r'module\s+([a-zA-Z0-9_\-]+)\s?\(', test_line)
+							if match is not None:
+								module = True
+								if match.group(1) is not None:
+									print "Auto filled part @id as '%s'"%match.group(1)
+									thing.id = match.group(1)
+							linenum_offset += 1
+						except IndexError:
+							module = True
+
+					# this will only happen if the regex is not quite right.
+					if not thing.id:
+						self.error('Missing mandatory attribute @id, couldn\'t find it. (%s:%d)' % (absname, linenum))
+						success = False
+
 				if not thing.name:
 					self.error('Missing mandatory attribute @name (%s:%d)' % (absname, linenum))
 					success = False
@@ -222,7 +246,6 @@ class ThingDoc:
 			else:
 				if key:
 					thing.desc.append((key + ' ' + value).strip())
-		f.close()
 		return success
 
 
