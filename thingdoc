@@ -138,26 +138,26 @@ class ThingDoc:
 				if not thing.id:
 
 					# Search ahead and use the module name as the id if it was not given.
-					module = None
+					exit = False
 					linenum_offset = 1
-					while module is None:
+					while not exit:
 						try:
 							test_line = f[linenum+linenum_offset]
 							print test_line
 							match = re.search(r'module\s+([a-zA-Z0-9_\-]+)\s?\(', test_line)
 							if match is not None:
-								module = True
+								exit = True
 								if match.group(1) is not None:
 									print "Auto filled part @id as '%s'"%match.group(1)
 									thing.id = match.group(1)
+
+							# Don't go into a new doc comment
+							if test_line.startswith('/**'):
+								exit = True
+
 							linenum_offset += 1
 						except IndexError:
-							module = True
-
-					# this will only happen if the regex is not quite right.
-					if not thing.id:
-						self.error('Missing mandatory attribute @id, couldn\'t find it. (%s:%d)' % (absname, linenum))
-						success = False
+							exit = True
 
 				if not thing.name:
 					self.error('Missing mandatory attribute @name (%s:%d)' % (absname, linenum))
@@ -170,6 +170,7 @@ class ThingDoc:
 							self.error("Duplicate thing id: '%s' (%s:%d)" % (thing.id, absname, linenum))
 							success = False
 					else:
+						print thing.id
 						things[ thing.id ] = thing
 				thing = None
 				continue
