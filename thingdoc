@@ -62,8 +62,11 @@ def escape_latex(value):
 		return value
 
 class ThingDoc:
-	
+
 	parse_only_files = False;
+
+	def __init__(self):
+		self.seen_files = []
 
 	def parse(self, indir, outdir, imagedir):
 
@@ -109,15 +112,18 @@ class ThingDoc:
 	def process_file(self, absname, things):
 
 		try:
-			f = open(absname, 'r')
+			filehandle = open(absname, 'r')
+			# Read into array because we need to seek ahead
+			# IMHO, if your SCAD files are big enough that this
+			# is an issue, then you've got bigger problems ;).
+			f = filehandle.readlines()
+			filehandle.close()
 		except IOError:
 			self.fatal('Cannot open file %s' % absname)
 
 		success = True
 		thing = None
-		linenum = 0
-		for line in f:
-			linenum += 1
+		for linenum, line in enumerate(f):
 			if line.startswith('/**'):
 				if thing:
 					self.error('Start of the comment (/**) found but the previous one is still open (%s:%d)' % (absname, linenum))
@@ -130,22 +136,60 @@ class ThingDoc:
 					success = False
 					continue
 				if not thing.id:
-					self.error('Missing mandatory attribute @id (%s:%d)' % (absname, linenum))
-					success = False
+
+					# Search ahead and use the module name as the id if it was not given.
+					exit = False
+					linenum_offset = 1
+					while not exit:
+						try:
+							test_line = f[linenum+linenum_offset]
+							print test_line
+							match = re.search(r'module\s+([a-zA-Z0-9_\-]+)\s?\(', test_line)
+							if match is not None:
+								exit = True
+								if match.group(1) is not None:
+									print "Auto filled part @id as '%s'"%match.group(1)
+									thing.id = match.group(1)
+
+							# Don't go into a new doc comment
+							if test_line.startswith('/**'):
+								exit = True
+
+							linenum_offset += 1
+						except IndexError:
+							exit = True
+
 				if not thing.name:
 					self.error('Missing mandatory attribute @name (%s:%d)' % (absname, linenum))
 					success = False
 				if thing.id and thing.name:
 					if thing.id in things:
 						if thing.id == 1:
-							self.fatal('More than one @root detected!')
+							self.fatal('More than one @root detected!(%s:%d)' % (absname, linenum))
 						else:
 							self.error("Duplicate thing id: '%s' (%s:%d)" % (thing.id, absname, linenum))
 							success = False
 					else:
+						print thing.id
 						things[ thing.id ] = thing
 				thing = None
 				continue
+
+			# for parsing external libraries
+			if line.startswith('use') or line.startswith('include'):
+				try:
+					fileregex = re.compile("<(.*?)>")
+					path = fileregex.findall(line)[0]
+					if not path.startswith('/'): # A relative path
+						path = os.path.normpath(os.path.dirname(absname)+'/'+path)
+					#recurse if it's not been seen
+					if path not in self.seen_files:
+						print "*",path
+						self.seen_files.append(path)
+						self.process_file(path, things)
+				except:
+					self.error('Bad filepath in use or include (%s:%d)' % (absname, linenum))
+
 			if not thing:
 				continue  # not in a comment
 			if not line.startswith(' * '):
@@ -203,7 +247,6 @@ class ThingDoc:
 			else:
 				if key:
 					thing.desc.append((key + ' ' + value).strip())
-		f.close()
 		return success
 
 
@@ -213,15 +256,18 @@ class ThingDoc:
 			dirs[:] = [d for d in dirs if not d.startswith('.')]
 			for name in files:
 				# skip if the file is not supported document
-				
+
 				if not os.path.splitext(name)[1] in ['.scad', '.tdoc']:
 					continue
-				if self.parse_only_files is not False:			
+				if self.parse_only_files is not False:
 					if not name in self.parse_only_files:
 						continue
-				print name
 				absname = os.path.join(root, name)
-				self.process_file(absname, things)
+				if os.path.normpath(absname) not in self.seen_files:
+					print name
+					self.seen_files.append(os.path.normpath(absname))
+					self.process_file(absname, things)
+
 		return things
 
 
@@ -386,9 +432,9 @@ class ThingDoc:
 		except:
 			self.error('Cannot create documentation.html')
 			return
-		try:		
-			os.mkdir('html_data')	
-		except: 	
+		try:
+			os.mkdir('html_data')
+		except:
 			pass
 
 		# copy static files
@@ -434,9 +480,9 @@ parse_only_temp = False;
 def parse_only(option, opt, value, parser):
 	global parse_only_temp
 	parse_only_temp = [i.split("/")[-1] for i in value.split(',')]
-		
-	
-			
+
+
+
 
 def main():
 	parser = OptionParser(
