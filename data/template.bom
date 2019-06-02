@@ -8,4 +8,4 @@ Bill of Materials: {{ title }}
 {% endfor -%}
 {% endfor %}
 ----
-Generated on {{ start }} by ThingDoc - http://thingdoc.org/
+Generated on {{ start }} by ThingDoc - https://github.com/josefprusa/ThingDoc/wiki
